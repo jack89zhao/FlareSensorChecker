@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>1: front_loadcell_portname</key>
+	<string>cu.usbserial-ClampFront</string>
+	<key>2: back_loadcell_portname</key>
+	<string>cu.usbserial-ClampBack</string>
+	<key>3: left_loadcell_portname</key>
+	<string>cu.usbserial-ClampLeft</string>
+	<key>4: right_loadcell_portname</key>
+	<string>cu.usbserial-ClampRight</string>
+	<key>5: laser_portname</key>
+	<string>cu.usbserial-Laser</string>
+	<key>6: angle_portname</key>
+	<string>cu.usbserial-Angle</string>
+	<key>7: luxmeter_portname</key>
+	<string>cu.usbserial-AL014DYP</string>
+</dict>
+</plist>
