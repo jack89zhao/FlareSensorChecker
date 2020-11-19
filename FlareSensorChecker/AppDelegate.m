@@ -147,7 +147,7 @@
         if (selectAxisParam) {
             ratio = [selectAxisParam[@"pp_ratio"] doubleValue];
             rtn = smc_set_profile_unit(_controllerID,
-                                       _selectedAxis,
+                                       axis,
                                        [selectAxisParam[@"start_speed"] doubleValue] * ratio,
                                        [selectAxisParam[@"run_speed"] doubleValue] * ratio,
                                        [selectAxisParam[@"acc_time"] doubleValue],
@@ -159,18 +159,18 @@
                 [self showExecuteErrorMessage:rtn];
             }
             
-            if (0 != (rtn = smc_set_s_profile(_controllerID, _selectedAxis, 0, [selectAxisParam[@"smooth_time"] doubleValue]))) {
+            if (0 != (rtn = smc_set_s_profile(_controllerID, axis, 0, [selectAxisParam[@"smooth_time"] doubleValue]))) {
                 canMove = NO;
                 [self showExecuteErrorMessage:rtn];
             }
             
-            if (0 != (rtn = smc_set_home_pin_logic(_controllerID, _selectedAxis, [selectAxisParam[@"home_level"] intValue], 0))) {
+            if (0 != (rtn = smc_set_home_pin_logic(_controllerID, axis, [selectAxisParam[@"home_level"] intValue], 0))) {
                 canMove = NO;
                 [self showExecuteErrorMessage:rtn];
             }
             
             if (0 != (rtn = smc_set_homemode(_controllerID,
-                                             _selectedAxis,
+                                             axis,
                                              [selectAxisParam[@"home_dir"] intValue],
                                              1,
                                              [selectAxisParam[@"home_mode"] intValue],
@@ -181,7 +181,7 @@
             }
             
             if (0 != (rtn = smc_set_home_profile_unit(_controllerID,
-                                                      _selectedAxis,
+                                                      axis,
                                                       [selectAxisParam[@"start_speed"] doubleValue] * ratio,
                                                       [selectAxisParam[@"home_speed"] doubleValue] * ratio,
                                                       [selectAxisParam[@"acc_time"] doubleValue],
@@ -675,13 +675,15 @@
     });
     
     do {
-        if (0 != (rtn = smc_vmove(_controllerID, axis, 0))) {  // move to negative limit.
+        int ret = rtn = smc_vmove(_controllerID, axis, 0);
+        if (ret!=0 && [NSThread.callStackSymbols.description containsString:@"calibrateAllAxis"]==NO){  // move to negative limit.
             smc_stop(_controllerID, axis, 0);
             [self showExecuteErrorMessage:rtn];
             flag = NO;
             break;
         } else {
-            while (0 == smc_check_done(_controllerID, axis)) {
+            if(ret==104|| ret==105) smc_stop(_controllerID, axis, 1);
+            while (0 == smc_check_done(_controllerID, axis)) {  // wait axis stopped
                 if (_isStopCalibrated) {
                     flag = NO;
                     break;
@@ -689,25 +691,25 @@
                 usleep(200000);
             }
             
-            if (0 != (rtn = smc_home_move(_controllerID, axis))) {
+            if (0 != (rtn = smc_home_move(_controllerID, axis))) {  // start home move
                 smc_stop(_controllerID, axis, 0);
                 [self showExecuteErrorMessage:rtn];
                 flag = NO;
                 break;
             } else {
                 WORD state;
-                while (0 == smc_get_home_result(_controllerID, axis, &state)) {
+                while (0 == smc_get_home_result(_controllerID, axis, &state)) { // wait axis stopped
                     if (state) { break; }
                     if (_isStopCalibrated) {  flag = NO; break; }
                 }
                 
-                if (0 != (rtn = smc_vmove(_controllerID, axis, 1))) {
+                if (0 != (rtn = smc_vmove(_controllerID, axis, 1))) {   // go to positive limit
                     smc_stop(_controllerID, axis, 0);
                     [self showExecuteErrorMessage:rtn];
                     flag = NO;
                     break;
                 } else {
-                    while (0 == smc_check_done(_controllerID, axis)) {
+                    while (0 == smc_check_done(_controllerID, axis)) { // wait axis stopped
                         if (_isStopCalibrated) {
                             flag = NO;
                             break;
@@ -812,7 +814,7 @@
                         }
                         break;
                     case 1:
-                        rowDict[_tableColumnIdentifier[2]] = @(bit);
+                        rowDict[_tableColumnIdentifier[3]] = @(bit);
                         sensorActivedCnt += bit;
                         break;
                     case 2:
@@ -823,7 +825,7 @@
                         rowDict[_tableColumnIdentifier[5]] = @(bit);
                         break;
                     case 4:
-                        rowDict[_tableColumnIdentifier[3]] = @(bit);
+                        rowDict[_tableColumnIdentifier[2]] = @(bit);
                         sensorActivedCnt += bit;
                         break;
                     default:
@@ -870,9 +872,10 @@
     
     if (_controllerID != -1) {
         do {
-            [errorMsg appendFormat:@"%@ Axis %d driver alarm. ", [self currentTimeString], axis];
-            
             DWORD errorcode = 0;
+            nmcs_get_node_od(_controllerID, 2, 1002+axis, 0x603F, 00, 16, &errorcode);
+            [errorMsg appendFormat:@"%@ Axis %d driver alarm.(Error Code: 0x%lx) ", [self currentTimeString], axis, errorcode];
+            
             nmcs_get_errcode(_controllerID, 2, &errorcode);
             
             if (errorcode != 0) {
@@ -922,8 +925,16 @@
         str = [NSString stringWithFormat:@"%@ %@\n", [self currentTimeString], errorMessage];
     }
     NSAttributedString *attributeString = [[NSAttributedString alloc] initWithString:str attributes:@{NSForegroundColorAttributeName : NSColor.redColor}];
-    [self.failMsgText.textStorage appendAttributedString:attributeString];
-    [self.failMsgText scrollPageDown:self];
+    dispatch_block_t block = ^(){
+        [self.failMsgText.textStorage appendAttributedString:attributeString];
+        [self.failMsgText scrollPageDown:self];
+    };
+    
+    if(NSThread.currentThread.isMainThread){
+        block();
+    } else {
+        dispatch_sync(dispatch_get_main_queue(), block);
+    }
 }
 
 - (void)appendMessage:(NSString *)message color:(NSColor *)color {
