@@ -11,8 +11,6 @@
 #import "IOCheckerWindowController.h"
 #import "LTSMC.h"
 
-#define K_DEFAULT_ENCODER_RATIO     (100)
-
 @interface AppDelegate () <NSTableViewDelegate, NSTableViewDataSource>
 {
     int _controllerID;
@@ -289,12 +287,6 @@
                     usleep(50000);
                     
                     if (0 != (rtn = smc_set_counter_inmode(self->_controllerID, axis, inmode))) {
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            [self showExecuteErrorMessage:rtn];
-                        });
-                    }
-                    
-                    if (0 != (rtn = smc_set_encoder_unit(self->_controllerID, axis, K_DEFAULT_ENCODER_RATIO))) {         // 设置指定轴编码器脉冲计数值
                         dispatch_async(dispatch_get_main_queue(), ^{
                             [self showExecuteErrorMessage:rtn];
                         });
@@ -845,7 +837,6 @@
             if (0 == (rtn = smc_get_encoder_unit(_controllerID, axis, &position))) {
                 NSDictionary *selectAxisParam = _axisParams[[NSString stringWithFormat:@"axis%d", axis]];
                 double ppRatio = [selectAxisParam[@"pp_ratio"] doubleValue];
-                position /= K_DEFAULT_ENCODER_RATIO;
                 rowDict[_tableColumnIdentifier[6]] = @(position / ppRatio);
             } else {
                 dispatch_async(dispatch_get_main_queue(), ^{
