@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>axis1</key>
+	<key>Axis1</key>
 	<dict>
 		<key>axis_id</key>
 		<integer>1</integer>
@@ -27,7 +27,7 @@
 		<key>pp_ratio</key>
 		<integer>100</integer>
 	</dict>
-	<key>axis2</key>
+	<key>Axis2</key>
 	<dict>
 		<key>axis_id</key>
 		<integer>2</integer>
@@ -52,7 +52,7 @@
 		<key>pp_ratio</key>
 		<integer>2500</integer>
 	</dict>
-	<key>axis3</key>
+	<key>Axis3</key>
 	<dict>
 		<key>axis_id</key>
 		<integer>3</integer>
@@ -77,7 +77,7 @@
 		<key>pp_ratio</key>
 		<integer>2500</integer>
 	</dict>
-	<key>axis4</key>
+	<key>Axis4</key>
 	<dict>
 		<key>axis_id</key>
 		<integer>4</integer>
@@ -102,7 +102,7 @@
 		<key>pp_ratio</key>
 		<integer>15000</integer>
 	</dict>
-	<key>axis5</key>
+	<key>Axis5</key>
 	<dict>
 		<key>axis_id</key>
 		<integer>5</integer>
@@ -127,7 +127,7 @@
 		<key>pp_ratio</key>
 		<integer>1000</integer>
 	</dict>
-	<key>axis6</key>
+	<key>Axis6</key>
 	<dict>
 		<key>axis_id</key>
 		<integer>6</integer>
@@ -152,7 +152,7 @@
 		<key>pp_ratio</key>
 		<integer>1000</integer>
 	</dict>
-	<key>axis7</key>
+	<key>Axis7</key>
 	<dict>
 		<key>axis_id</key>
 		<integer>7</integer>
@@ -177,7 +177,7 @@
 		<key>pp_ratio</key>
 		<string>1000</string>
 	</dict>
-	<key>axis8</key>
+	<key>Axis8</key>
 	<dict>
 		<key>axis_id</key>
 		<integer>8</integer>
@@ -202,7 +202,7 @@
 		<key>pp_ratio</key>
 		<string>1000</string>
 	</dict>
-	<key>axis9</key>
+	<key>Axis9</key>
 	<dict>
 		<key>axis_id</key>
 		<integer>9</integer>
@@ -227,7 +227,7 @@
 		<key>pp_ratio</key>
 		<string>40000</string>
 	</dict>
-	<key>axis10</key>
+	<key>Axis10</key>
 	<dict>
 		<key>axis_id</key>
 		<integer>10</integer>
@@ -251,56 +251,6 @@
 		<integer>30</integer>
 		<key>pp_ratio</key>
 		<string>800</string>
-	</dict>
-	<key>axis11</key>
-	<dict>
-		<key>axis_id</key>
-		<integer>11</integer>
-		<key>start_speed</key>
-		<string>1</string>
-		<key>stop_speed</key>
-		<string>1</string>
-		<key>home_speed</key>
-		<string>10</string>
-		<key>run_speed</key>
-		<string>10</string>
-		<key>acc_time</key>
-		<string>1</string>
-		<key>smooth_time</key>
-		<string>0.2</string>
-		<key>home_dir</key>
-		<string>1</string>
-		<key>home_level</key>
-		<string>0</string>
-		<key>home_mode</key>
-		<integer>30</integer>
-		<key>pp_ratio</key>
-		<string>2000</string>
-	</dict>
-	<key>axis12</key>
-	<dict>
-		<key>axis_id</key>
-		<integer>12</integer>
-		<key>start_speed</key>
-		<string>1</string>
-		<key>stop_speed</key>
-		<string>1</string>
-		<key>home_speed</key>
-		<string>10</string>
-		<key>run_speed</key>
-		<string>10</string>
-		<key>acc_time</key>
-		<string>1</string>
-		<key>smooth_time</key>
-		<string>0.2</string>
-		<key>home_dir</key>
-		<string>1</string>
-		<key>home_level</key>
-		<string>0</string>
-		<key>home_mode</key>
-		<integer>30</integer>
-		<key>pp_ratio</key>
-		<string>2000</string>
 	</dict>
 </dict>
 </plist>

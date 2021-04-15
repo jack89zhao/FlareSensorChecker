@@ -40,7 +40,7 @@
     }
     _tableColumnIdentifier = [keys copy];
     
-    for (int row = 0; row < 12; row++) {
+    for (int row = 0; row < _axisParams.count; row++) {
         NSMutableDictionary *rowDict = [NSMutableDictionary new];
         for (int col = 0; col < 8; col++) {
             if (col == 0) {
@@ -66,6 +66,10 @@
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+    if (!_axisParams) {
+        NSString *path = [NSBundle.mainBundle pathForResource:@"Profile" ofType:@"plist"];
+        _axisParams = [NSDictionary dictionaryWithContentsOfFile:path];
+    }
     // Insert code here to initialize your application
     if (!_tableDataSource) {
         _tableDataSource = [NSMutableArray new];
@@ -74,12 +78,6 @@
     if (!_portWindowController) {
         _portWindowController = [[PortCheckerWindowController alloc] init];
     }
-    
-    if (!_axisParams) {
-        NSString *path = [NSBundle.mainBundle pathForResource:@"Profile" ofType:@"plist"];
-        _axisParams = [NSDictionary dictionaryWithContentsOfFile:path];
-    }
-//    _selectedAxis = 1;
     
     [self.tableView setRowSizeStyle:NSTableViewRowSizeStyleCustom];
     [self loadTableDataSource];
@@ -94,6 +92,12 @@
     _shieldAxis = 9;
     [self appendMessage:@"Shield 9 axis when run calibration" color:NSColor.darkGrayColor];
     
+    [_cbAxis removeAllItems];
+    [_cbAxis addItemsWithObjectValues:[_axisParams.allKeys sortedArrayUsingComparator:^NSComparisonResult(NSString * _Nonnull obj1, NSString * _Nonnull obj2) {
+        NSInteger num1 = [obj1 substringFromIndex:4].intValue;
+        NSInteger num2 = [obj2 substringFromIndex:4].intValue;
+        return num1<num2 ? NSOrderedAscending : NSOrderedDescending;
+    }]];
     [NSThread detachNewThreadSelector:@selector(checkSensor) toTarget:self withObject:nil];
 }
 
@@ -106,7 +110,7 @@
         nmcs_clear_card_errcode(_controllerID);   // clear card error
         nmcs_clear_errcode(_controllerID,0);      // clear bus error
         
-        for (int axis = 1; axis <= 12; axis++) {
+        for (int axis = 1; axis <= _axisParams.count; axis++) {
             nmcs_clear_axis_errcode(_controllerID, axis);
         }
         
@@ -136,11 +140,11 @@
 - (BOOL)setAllAxisParams {
     BOOL flag = false;
     
-    for (int axis = 1; axis <= 12; axis++) {
+    for (int axis = 1; axis <= _axisParams.count; axis++) {
         int rtn = 0;
         double ratio = 1;
         BOOL canMove = true;
-        NSDictionary *selectAxisParam = _axisParams[[NSString stringWithFormat:@"axis%d", axis]];
+        NSDictionary *selectAxisParam = _axisParams[[NSString stringWithFormat:@"Axis%d", axis]];
         
         if (selectAxisParam) {
             ratio = [selectAxisParam[@"pp_ratio"] doubleValue];
@@ -271,7 +275,7 @@
                 nmcs_clear_errcode(self->_controllerID,0);      // clear bus error
                 nmcs_set_alarm_clear(self->_controllerID,2,0);
                 
-                for (int axis = 1; axis <= 12; axis++) {
+                for (int axis = 1; axis <= _axisParams.count; axis++) {
                     nmcs_clear_axis_errcode(self->_controllerID, axis);
                 }
                 
@@ -328,7 +332,7 @@
             nmcs_clear_card_errcode(self->_controllerID);   // clear card error
             nmcs_clear_errcode(self->_controllerID,0);      // clear bus error
             
-            for (int axis = 1; axis <= 12; axis++) {
+            for (int axis = 1; axis <= _axisParams.count; axis++) {
                 nmcs_clear_axis_errcode(self->_controllerID, axis);
             }
             usleep(20000);
@@ -412,14 +416,14 @@
     }
     
     if (_connected) {
-        for (int axis = 1; axis <= 12; axis++) {
+        for (int axis = 1; axis <= _axisParams.count; axis++) {
             smc_stop(_controllerID, axis, 0);
         }
         
         NSString *msg = [NSString stringWithFormat:@"Move axis %d to %@ limit", _selectedAxis, direction ? @"positive" : @"negative"];
         [self appendMessage:msg color:NSColor.blueColor];
         
-        NSDictionary *selectAxisParam = _axisParams[[NSString stringWithFormat:@"axis%d", _selectedAxis]];
+        NSDictionary *selectAxisParam = _axisParams[[NSString stringWithFormat:@"Axis%d", _selectedAxis]];
         
         if (selectAxisParam) {
             ratio = [selectAxisParam[@"pp_ratio"] doubleValue];
@@ -448,57 +452,41 @@
             } else {
                 [self appendMessage:[NSString stringWithFormat:@"Can't move axis %d because of some error happened", _selectedAxis] color:NSColor.redColor];
             }
-        } else {        // default value.
-            switch (_selectedAxis) {
-                case 1: ratio = 100; break;
-                case 2:
-                case 3: ratio = 2500; break;
-                case 4: ratio = 15000; break;
-                case 5:
-                case 6:
-                case 7:
-                case 8: ratio = 1000; break;
-                case 9: ratio = 40000; break;
-                case 10: ratio = 800; break;
-                case 11:
-                case 12: ratio = 2000; break;
-                default: break;
-            }
-            
-            rtn |= smc_set_profile_unit(_controllerID, _selectedAxis, 5.0 * ratio, 15.0 * ratio, 2, 2, 5 * ratio);
-            rtn |= smc_set_s_profile(_controllerID, _selectedAxis, 0, 0.1);
-            rtn |= smc_vmove(_controllerID, _selectedAxis, direction);
-            
-            if (rtn != 0) {
-                [self showExecuteErrorMessage:rtn];
-            }
         }
+            
+        rtn |= smc_set_profile_unit(_controllerID, _selectedAxis, 5.0 * ratio, 15.0 * ratio, 2, 2, 5 * ratio);
+        rtn |= smc_set_s_profile(_controllerID, _selectedAxis, 0, 0.1);
+        rtn |= smc_vmove(_controllerID, _selectedAxis, direction);
         
-        _isMoving = YES;
-        sender.enabled = NO;
-        __weak NSButton *button = sender;
+        if (rtn != 0) {
+            [self showExecuteErrorMessage:rtn];
+        }
+    }
         
-        if (canMove) {
-            dispatch_async(dispatch_get_global_queue(0, 0), ^{
-                while(smc_check_done(self->_controllerID, self->_selectedAxis)==0) { usleep(10000); } //等待运动停止
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    button.enabled = YES;
-                    self->_isMoving = NO;
-                    [self appendMessage:[NSString stringWithFormat:@"Success to move axis %d using vmove", self->_selectedAxis] color:NSColor.darkGrayColor];
-                });
-            });
-        } else {
+    _isMoving = YES;
+    sender.enabled = NO;
+    __weak NSButton *button = sender;
+    
+    if (canMove) {
+        dispatch_async(dispatch_get_global_queue(0, 0), ^{
+            while(smc_check_done(self->_controllerID, self->_selectedAxis)==0) { usleep(10000); } //等待运动停止
             dispatch_async(dispatch_get_main_queue(), ^{
                 button.enabled = YES;
                 self->_isMoving = NO;
+                [self appendMessage:[NSString stringWithFormat:@"Success to move axis %d using vmove", self->_selectedAxis] color:NSColor.darkGrayColor];
             });
-        }
+        });
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            button.enabled = YES;
+            self->_isMoving = NO;
+        });
     }
 }
 
 - (IBAction)moveToOrigin:(NSButton *)sender {
     if (_connected) {
-        for (int axis = 1; axis <= 12; axis++) {
+        for (int axis = 1; axis <= _axisParams.count; axis++) {
             smc_stop(_controllerID, axis, 0);
         }
         
@@ -507,7 +495,7 @@
         __block int rtn = 0;
         double ratio = 1;
         BOOL canMove = true;
-        NSDictionary *selectAxisParam = _axisParams[[NSString stringWithFormat:@"axis%d", _selectedAxis]];
+        NSDictionary *selectAxisParam = _axisParams[[NSString stringWithFormat:@"Axis%d", _selectedAxis]];
         
         if (selectAxisParam) {
             ratio = [selectAxisParam[@"pp_ratio"] doubleValue];
@@ -628,7 +616,7 @@
                     [self appendMessage:@"Open auto-door" color:NSColor.darkGrayColor];
                 });
                 
-                for (int axis = 1; axis <= 12; axis++) {
+                for (int axis = 1; axis <= _axisParams.count; axis++) {
                     smc_stop(self->_controllerID, axis, 0);
                 }
                 // open door
@@ -638,7 +626,7 @@
                 smc_write_outbit(self->_controllerID, 20, 1);
                 sleep(3);
                 
-                for (int axis = 1; axis <= 12; axis++) {
+                for (int axis = 1; axis <= _axisParams.count; axis++) {
                     if (axis == self->_shieldAxis) {  // shield one axis.
                         continue;
                     }
@@ -779,7 +767,7 @@
             });
         }
         
-        for (int axis = 1; axis <= 12; axis++) {
+        for (int axis = 1; axis <= _axisParams.count; axis++) {
             DWORD state = smc_axis_io_status(_controllerID, axis);
             NSMutableDictionary *rowDict = self->_tableDataSource[axis-1];
             
@@ -835,7 +823,7 @@
             int rtn = 0;
             double position;
             if (0 == (rtn = smc_get_encoder_unit(_controllerID, axis, &position))) {
-                NSDictionary *selectAxisParam = _axisParams[[NSString stringWithFormat:@"axis%d", axis]];
+                NSDictionary *selectAxisParam = _axisParams[[NSString stringWithFormat:@"Axis%d", axis]];
                 double ppRatio = [selectAxisParam[@"pp_ratio"] doubleValue];
                 rowDict[_tableColumnIdentifier[6]] = @(position / ppRatio);
             } else {

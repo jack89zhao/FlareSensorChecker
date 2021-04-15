@@ -67,14 +67,17 @@
         NSArray *views = self.window.contentView.subviews;
         
         for (NSView *v  in views) {
-            if ([v isKindOfClass:NSTextField.class]) {
-                if ([v.identifier isEqualToString:@"key"]) {
-                    [(NSTextField*)v setStringValue:keys[v.tag - 1]];
-                } else if ([v.identifier isEqualToString:@"value"]) {
-                    [(NSTextField*)v setStringValue:[NSString stringWithFormat:@"/dev/%@", _portnames[keys[v.tag - 1]]]];
+            v.hidden = v.tag>keys.count;
+            if(v.hidden==NO) {
+                if ([v isKindOfClass:NSTextField.class]) {
+                    if ([v.identifier isEqualToString:@"key"]) {
+                        [(NSTextField*)v setStringValue:keys[v.tag - 1]];
+                    } else if ([v.identifier isEqualToString:@"value"]) {
+                        [(NSTextField*)v setStringValue:[NSString stringWithFormat:@"/dev/%@", _portnames[keys[v.tag - 1]]]];
+                    }
+                } else if ([v isKindOfClass:NSImageView.class]) {
+                    [(NSImageView*)v setImage:kvImages[keys[v.tag - 1]]];
                 }
-            } else if ([v isKindOfClass:NSImageView.class]) {
-                [(NSImageView*)v setImage:kvImages[keys[v.tag - 1]]];
             }
         }
     }
